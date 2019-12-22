@@ -1,0 +1,62 @@
+﻿@page "/cou"
+
+<h1>古本を探しましょう!</h1>
+<ScannerDialog @ref="scandialog" OnFailed="OnScanFailed" OnCodeDetected="OnCodeDetected" />
+<div class="mat-layout-grid">
+    <div class="mat-layout-grid-inner">
+        <div class="mat-layout-grid-cell mat-layout-grid-cell-span-12">
+            <h3 style="text-align:center;"></h3>
+        </div>
+        <EditForm Model="@Input" OnValidSubmit="SubmitAsync" class="mat-layout-grid-cell mat-layout-grid-cell-span-12">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="mat-layout-grid-inner">
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-12-desktop mat-layout-grid-cell-span-8-tablet mat-layout-grid-cell-span-4-phone">
+                    <MatTextField style="width:100%;" Outlined="true" @bind-Value="@Input.Isbn"></MatTextField>
+                </div>
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-12-desktop mat-layout-grid-cell-span-8-tablet mat-layout-grid-cell-span-4-phone mat-layout-grid-align-right">
+                    <MatButton Icon="search" Outlined="true" Type="submit">ISBN検索</MatButton>
+                    <MatButton Icon="camera_alt" Outlined="true" Type="button" OnClick="ScanDialogOpen">本をスキャン</MatButton>
+                </div>
+            </div>
+            <p style="color:red;">@ErrorMessage</p>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+
+    ScannerDialog scandialog { get; set; }
+    string ErrorMessage { get; set; }
+    bool IsLoading { get; set; }
+    InputIsbn Input { get; set; } = new InputIsbn();
+    class InputIsbn
+    {
+        [Required(ErrorMessage = "ISBNコードを入力してください。")]
+        [IsbnValidationAttribute]
+        public string Isbn { get; set; }
+    }
+
+    void SubmitAsync()
+    {
+
+    }
+
+    async Task ScanDialogOpen()
+    {
+        ErrorMessage = string.Empty;
+        await scandialog.OpenDialogAsync();
+    }
+
+    void OnCodeDetected(string code)
+    {
+        Input.Isbn = code;
+    }
+
+    void OnScanFailed(Exception e)
+    {
+        ErrorMessage = "カメラの起動に失敗しました。";
+        Console.WriteLine(e);
+    }
+
+}

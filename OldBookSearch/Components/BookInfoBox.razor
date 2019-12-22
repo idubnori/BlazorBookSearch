@@ -1,0 +1,122 @@
+﻿
+@using OldBookSearch.Services.Book
+@using OldBookSearch.Utility
+
+@inject IJSRuntime jSRuntime
+
+<style>
+    .card-image {
+        width: 120px;
+        object-fit: cover;
+    }
+
+    .error-msg {
+        color: red;
+    }
+</style>
+@if (BookInfo != null)
+{
+    <div class="container">
+        <div class="row no-gutters">
+            <div class="card col-sm-12">
+                <div class="row no-gutters">
+                    <div class="col-md-4 card col-sm-4" style="text-align:center;">
+                        <img class="card-image" src="@ImageUrlUtil.GetImageUrl(BookInfo.BookImageUrl)">
+                    </div>
+                    <div class="col-md-8 card col-sm-8">
+                        <div class="card-body">
+                            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+                            {
+                                <p5 class="error-msg">@ErrorMessage</p5>
+                            }
+                            else
+                            {
+                                <h5 class="card-title">@BookInfo.BookTitle.</h5>
+                                @if (@BookInfo.BookPrice > 0)
+                                {
+                                    <p class="card-text">定価: @BookInfo.BookPrice 円</p>
+                                }
+                                <p class="card-text">@BookInfo.BookAuthor.</p>
+                                @if (!string.IsNullOrWhiteSpace(BookInfo.AmazonLink))
+                                {
+                                    <MatButton Outlined="true" OnClick="OpenBookUrl">Amazonで確認</MatButton>
+                                }
+
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (!IsLoading)
+{
+    <div class="container">
+        <div class="row no-gutters">
+            <div class="col-sm-12">
+                <div class="row no-gutters">
+                    <div class="col-md-12" style="text-align:center;">
+                        <h4>書籍情報が見つかりませんでした。</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (IsLoading)
+{
+    <div class="container">
+        <div class="row no-gutters">
+            <div class="col-sm-12">
+                <div class="row no-gutters">
+                    <div class="col-md-12" style="text-align:center;">
+                        <div class="spinner-loader"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Inject]
+    IBookGet BookInfoClient { get; set; }
+    bool IsLoading { get; set; } = false;
+    string ErrorMessage { get; set; }
+    BookInfo BookInfo { get; set; }
+
+    public async Task DisplayInfoAsync(string isbn13)
+    {
+        try
+        {
+            BookInfo = null;
+            IsLoading = true;
+            base.StateHasChanged();
+            BookInfo = await BookInfoClient.GetBookInfoAsync(isbn13);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+            ErrorMessage = "情報取得に失敗しました。";
+        }
+        finally
+        {
+            IsLoading = false;
+            base.StateHasChanged();
+        }
+    }
+
+    async Task OpenBookUrl()
+    {
+        if (!string.IsNullOrWhiteSpace(BookInfo.AmazonLink))
+        {
+            try
+            {
+                await jSRuntime.InvokeAsync<object>("open", BookInfo.AmazonLink, "_blank");
+            }
+            catch (Exception) { }
+        }
+    }
+}

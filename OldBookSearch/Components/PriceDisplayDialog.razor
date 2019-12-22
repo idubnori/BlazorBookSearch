@@ -1,0 +1,78 @@
+﻿@using OldBookSearch.Services.Book
+@using OldBookSearch.Services.Product
+@using System.Threading
+
+<!--
+<style>
+    .mdc-dialog .mdc-dialog__surface {
+        max-width: none;
+    }
+</style>
+    -->
+<MatDialog @bind-IsOpen="@IsDialogOpen" CanBeClosed="false">
+    <MatDialogActions>
+        <MatIconButton OnClick="OnCloseClick" Icon="clear" Disabled="IsLoading"></MatIconButton>
+    </MatDialogActions>
+    <MatDialogContent>
+        <div class="mat-layout-grid">
+            <div class="mat-layout-grid-inner">
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-12">
+                    <BookInfoBox @ref="@bookInfoBox"></BookInfoBox>
+                </div>
+
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-12" style="text-align:center; margin:3px;">
+                    <h3>価格情報</h3>
+                    <p>※選択することで商品リンク先に飛びます。</p>
+                </div>
+                <!--
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-4">
+                    <ProductInfoBox @ref="@amazonMarketBox" StoreType="@StoreType.AmazonMarket"></ProductInfoBox>
+                </div>
+                -->
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-4">
+                    <ProductInfoBox @ref="@surugayaBox" StoreType="@StoreType.Surugaya"></ProductInfoBox>
+                </div>
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-4">
+                    <ProductInfoBox @ref="@bookOffBox" StoreType="@StoreType.Bookoff"></ProductInfoBox>
+                </div>
+            </div>
+        </div>
+    </MatDialogContent>
+</MatDialog>
+
+@code {
+
+    BookInfoBox bookInfoBox;
+    ProductInfoBox surugayaBox;
+    ProductInfoBox amazonMarketBox;
+    ProductInfoBox bookOffBox;
+    bool IsLoading { get; set; } = false;
+    bool IsDialogOpen { get; set; }
+
+
+    protected override void OnInitialized()
+    {
+        IsDialogOpen = false;
+    }
+
+    public async Task OpenDialogAsync(string isbn13)
+    {
+        IsLoading = true;
+        IsDialogOpen = true;
+        base.StateHasChanged();
+        var taskList = new List<Task>();
+        taskList.Add(bookInfoBox.DisplayInfoAsync(isbn13));
+        taskList.Add(bookOffBox.DisplayInfoAsync(isbn13));
+        //taskList.Add(amazonMarketBox.DisplayInfoAsync(isbn13));
+        taskList.Add(surugayaBox.DisplayInfoAsync(isbn13));
+
+        await Task.WhenAll(taskList);
+        IsLoading = false;
+        base.StateHasChanged();
+    }
+
+    void OnCloseClick()
+    {
+        IsDialogOpen = false;
+    }
+}

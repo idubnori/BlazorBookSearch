@@ -1,0 +1,132 @@
+﻿@using OldBookSearch.Services.Product
+@using OldBookSearch.Utility
+
+@inject IJSRuntime jSRuntime
+<style>
+    .mat-card {
+        background-color: @cardColor;
+    }
+
+    .mat-card-content {
+        padding: 1rem;
+    }
+
+    .mat-card-head {
+        text-align: center;
+        vertical-align: central;
+    }
+
+    .mat-card-p {
+        text-align: center;
+        vertical-align: central;
+    }
+</style>
+<MatCard class="mat-card">
+    @if (IsLoading)
+    {
+        <MatCardContent>
+            <div class="mat-card-content">
+                <MatHeadline6 class="mat-card-head">
+                    @StoreType.GetStoreTypeString()
+                </MatHeadline6>
+                <MatHeadline6 class="mat-card-head">
+                    <div class="spinner-loader"></div>
+                </MatHeadline6>
+                <MatHeadline6 class="mat-card-p">
+                    読み込み中...
+                </MatHeadline6>
+            </div>
+        </MatCardContent>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <MatCardContent>
+            <div class="mat-card-content">
+                <MatHeadline6 class="mat-card-head">
+                    @ErrorMessage
+                </MatHeadline6>
+            </div>
+        </MatCardContent>
+    }
+    else if (ProductInfo != null)
+    {
+        <MatCardContent @onclick="OpenProduct">
+            <div class="mat-card-content">
+                <MatHeadline6 class="mat-card-head">
+                    @StoreType.GetStoreTypeString()
+                </MatHeadline6>
+                @if (ProductInfo.IsNotSoldOut)
+                {
+                    <MatHeadline6 class="mat-card-p">
+                        @ProductInfo.Price 円
+                        @if (ProductInfo.Shipping > 0)
+                        {
+                            <text>(送料:</text>
+                            @ProductInfo.Shipping
+                            <text> 円)</text>
+                        }
+                    </MatHeadline6>
+                }
+                else
+                {
+                    <MatHeadline6 class="mat-card-p">
+                        情報なし。
+                    </MatHeadline6>
+                }
+            </div>
+        </MatCardContent>
+    }
+
+</MatCard>
+@code {
+
+    const string ActiveColor = "cornsilk";
+    const string NoActiveColor = "gainsboro";
+
+    [Inject]
+    IProductServiceFactory ServiceFactory { get; set; }
+
+    [Parameter]
+    public StoreType StoreType { get; set; }
+
+    string cardColor = ActiveColor;
+    bool IsLoading { get; set; } = false;
+    string ErrorMessage { get; set; }
+    ProductInfo ProductInfo { get; set; }
+
+    public async Task DisplayInfoAsync(string isbn13)
+    {
+        try
+        {
+            ProductInfo = null;
+            ErrorMessage = "";
+            IsLoading = true;
+            base.StateHasChanged();
+
+            var service = ServiceFactory.GetProducService(StoreType);
+            ProductInfo = await service.ProductGetAsync(isbn13);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+            ErrorMessage = "情報取得に失敗しました。";
+        }
+        finally
+        {
+            IsLoading = false;
+            base.StateHasChanged();
+        }
+    }
+
+    async Task OpenProduct()
+    {
+        if (!string.IsNullOrWhiteSpace(ProductInfo.LinkUrl) && ProductInfo.IsNotSoldOut)
+        {
+            try
+            {
+                await jSRuntime.InvokeAsync<object>("open", ProductInfo.LinkUrl, "_blank");
+            }
+            catch (Exception) { }
+        }
+    }
+}

@@ -1,0 +1,65 @@
+﻿@inject IJSRuntime jsRuntime;
+
+<MatDialog @bind-IsOpen="@IsDialogOpen" CanBeClosed="false">
+    <MatDialogContent>
+        <p>本のバーコードをスキャンしてください。</p>
+        <div id="camera-area">
+            <div id="detect-area" style="visibility:hidden;"></div>
+        </div>
+    </MatDialogContent>
+    <MatDialogActions>
+        <MatButton OnClick="@(async e => { await OnClick(false); })">Cancel</MatButton>
+    </MatDialogActions>
+</MatDialog>
+
+@code {
+
+    public bool IsDialogOpen { get; set; }
+    [Parameter]
+    public EventCallback<bool> ButtonAction { get; set; }
+    [Parameter]
+    public EventCallback<Exception> OnFailed { get; set; }
+    [Parameter]
+    public EventCallback<string> OnCodeDetected { get; set; }
+
+    public async Task OpenDialogAsync()
+    {
+        IsDialogOpen = true;
+        try
+        {
+            await jsRuntime.InvokeVoidAsync("startCapture", DotNetObjectReference.Create(this));
+        }
+        catch (Exception e)
+        {
+            await StopCapture();
+            IsDialogOpen = false;
+            await OnFailed.InvokeAsync(e);
+        }
+    }
+
+    async Task OnClick(bool result)
+    {
+        await StopCapture();
+        IsDialogOpen = false;
+        await ButtonAction.InvokeAsync(result);
+    }
+
+    async Task StopCapture()
+    {
+        try
+        {
+            await jsRuntime.InvokeVoidAsync("stopCapture", null);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+
+    [JSInvokable]
+    public async Task CodeDetected(string code)
+    {
+        IsDialogOpen = false;
+        await OnCodeDetected.InvokeAsync(code);
+    }
+}

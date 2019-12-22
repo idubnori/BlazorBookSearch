@@ -1,0 +1,80 @@
+﻿@page "/"
+
+@using OldBookSearch.Services.Product
+@using OldBookSearch.Services.Book
+
+<style>
+</style>
+
+
+<ScannerDialog @ref="scandialog" OnFailed="OnScanFailed" OnCodeDetected="OnCodeDetected" />
+<PriceDisplayDialog @ref="priceDisplayDialog" />
+<LoadingScreen IsLoading="@IsLoading" />
+<div class="mat-layout-grid">
+    <div class="mat-layout-grid-inner">
+        <div class="mat-layout-grid-cell mat-layout-grid-cell-span-12">
+            <h3 style="text-align:center;">カメラで本のバーコードをスキャンしてみよう。</h3>
+        </div>
+        <EditForm Model="@Input" EditContext="@editContext" OnValidSubmit="SubmitAsync" class="mat-layout-grid-cell mat-layout-grid-cell-span-12">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="mat-layout-grid-inner">
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-12-desktop mat-layout-grid-cell-span-8-tablet mat-layout-grid-cell-span-4-phone mat-layout-grid-align-left">
+                    <MatButton Icon="camera_alt" Outlined="true" Type="button" OnClick="ScanDialogOpen">本をカメラでスキャン</MatButton>
+                </div>
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-12-desktop mat-layout-grid-cell-span-8-tablet mat-layout-grid-cell-span-4-phone">
+                    <MatTextField PlaceHolder="13桁のISBNコードを入力してください。" style="width:100%;" Outlined="true" @bind-Value="@Input.Isbn"></MatTextField>
+                </div>
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-12-desktop mat-layout-grid-cell-span-8-tablet mat-layout-grid-cell-span-4-phone mat-layout-grid-align-right">
+                    <MatButton Icon="search" Outlined="true" Type="submit">検索</MatButton>
+                </div>
+            </div>
+            <p style="color:red;">@ErrorMessage</p>
+        </EditForm>
+    </div>
+</div>
+
+
+@code{
+
+    PriceDisplayDialog priceDisplayDialog { get; set; }
+    ScannerDialog scandialog { get; set; }
+
+    EditContext editContext;
+    string ErrorMessage { get; set; }
+    bool IsLoading { get; set; }
+
+    InputIsbn Input { get; set; } = new InputIsbn();
+
+    class InputIsbn
+    {
+        [Required(ErrorMessage = "ISBNコードを入力してください。")]
+        [IsbnValidationAttribute]
+        public string Isbn { get; set; }
+    }
+
+    async Task SubmitAsync()
+    {
+        ErrorMessage = string.Empty;
+        await priceDisplayDialog.OpenDialogAsync(Input.Isbn);
+    }
+
+    async Task ScanDialogOpen()
+    {
+        ErrorMessage = string.Empty;
+        await scandialog.OpenDialogAsync();
+    }
+
+    async void OnCodeDetected(string code)
+    {
+        Input.Isbn = code;
+        await SubmitAsync();
+    }
+
+    void OnScanFailed(Exception e)
+    {
+        ErrorMessage = "カメラの起動に失敗しました。";
+        Console.WriteLine(e);
+    }
+
+}

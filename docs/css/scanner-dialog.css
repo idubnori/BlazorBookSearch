@@ -1,0 +1,32 @@
+﻿.#camera-area {
+    margin: auto;
+    overflow: hidden;
+    height: 300px;
+    width: 300px;
+    position: relative;
+}
+
+#camera-area video, canvas {
+    width: 100%;
+    height: auto;
+}
+
+    #camera-area video.drawingBuffer, canvas.drawingBuffer {
+        display: none;
+    }
+
+
+#detect-area {
+    position: absolute;
+    top: 30%;
+    bottom: 30%;
+    left: 10%;
+    right: 10%;
+    border: 2px solid #0000ff;
+}
+
+.drawingBuffer {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
